@@ -1,0 +1,26 @@
+{
+  "name": "website-frontend",
+  "version": "1.0.0",
+  "description": "This project is structured as a MERN stack application.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "npm start --prefix backend",
+    "client": "npm run dev --prefix frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vedika7385/website-frontend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Vedika7385/website-frontend/issues"
+  },
+  "homepage": "https://github.com/Vedika7385/website-frontend#readme",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
