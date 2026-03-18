@@ -1,18 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = ({ setIsAuthenticated }) => {
-    // Live Telemetry States
-    const [time, setTime] = useState(new Date().toLocaleTimeString('en-US', { hour12: false }));
-    const [solarP, setSolarP] = useState(12.5);
-    const [chgP, setChgP] = useState(18.5);
-
+    const [currentView, setCurrentView] = useState('Operational Dashboard');
     const navigate = useNavigate();
 
-    // Chart References
-    const predTempChartRef = useRef(null);
-    const acousticChartRef = useRef(null);
-    const socChartRef = useRef(null);
+    // Stats for simulation
+    const [solarP, setSolarP] = useState(44.31);
+    const [systemLoss, setSystemLoss] = useState(40.52);
 
     const handleLogout = () => {
         setIsAuthenticated(false);
@@ -20,142 +15,256 @@ const Dashboard = ({ setIsAuthenticated }) => {
         navigate('/login');
     };
 
+    // Chart Refs
+    const thermalChartRef = useRef(null);
+    const chargingChartRef = useRef(null);
+
     useEffect(() => {
-        // Clock Update
-        const timer = setInterval(() => {
-            setTime(new Date().toLocaleTimeString('en-US', { hour12: false }));
-            setSolarP((12.5 + (Math.random() * 0.4 - 0.2)).toFixed(1));
-            setChgP((18.5 + (Math.random() * 0.6 - 0.3)).toFixed(1));
-        }, 1000);
-
-        // Chart.js Initialization (Using the global 'Chart' from index.html CDN)
-        const ctxPred = predTempChartRef.current?.getContext('2d');
-        const ctxAcoustic = acousticChartRef.current?.getContext('2d');
-        const ctxSoc = socChartRef.current?.getContext('2d');
-
-        let predChart, acousticChart, socChart;
+        const ctxThermal = thermalChartRef.current?.getContext('2d');
+        const ctxCharging = chargingChartRef.current?.getContext('2d');
+        let thermalChart, chargingChart;
 
         if (window.Chart) {
-            predChart = new window.Chart(ctxPred, {
-                type: 'line',
-                data: {
-                    labels: ['Now', '+10m', '+20m', '+30m', '+40m', '+50m', '+60m'],
-                    datasets: [{
-                        label: 'Inverter AI Prediction',
-                        data: [48.2, 49.1, 51.5, 53.4, 55.0, 56.8, 58.2],
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            acousticChart = new window.Chart(ctxAcoustic, {
-                type: 'line',
-                data: {
-                    labels: Array.from({ length: 50 }, (_, i) => i),
-                    datasets: [{
-                        data: Array.from({ length: 50 }, () => Math.random() * 2 - 1),
-                        borderColor: '#3b82f6',
-                        borderWidth: 1.5,
-                        pointRadius: 0
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } }
-            });
-
-            socChart = new window.Chart(ctxSoc, {
+            thermalChart = new window.Chart(ctxThermal, {
                 type: 'doughnut',
                 data: {
+                    labels: ['Normal', 'Warning', 'Critical'],
                     datasets: [{
-                        data: [85, 15],
-                        backgroundColor: ['#10b981', '#e2e8f0'],
+                        data: [14, 5, 3],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
                         borderWidth: 0,
-                        circumference: 270,
-                        rotation: 225
                     }]
                 },
-                options: { cutout: '75%', plugins: { tooltip: { enabled: false } } }
+                options: {
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            chargingChart = new window.Chart(ctxCharging, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'Completed', 'Waiting'],
+                    datasets: [{
+                        data: [3, 18, 5],
+                        backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
             });
         }
 
         return () => {
-            clearInterval(timer);
-            predChart?.destroy();
-            acousticChart?.destroy();
-            socChart?.destroy();
+            thermalChart?.destroy();
+            chargingChart?.destroy();
         };
     }, []);
+
+    const sidebarItems = [
+        { name: 'Operational Dashboard', icon: 'fa-th-large' },
+        { name: 'Solar Monitoring', icon: 'fa-solar-panel' },
+        { name: 'Battery Monitoring', icon: 'fa-car-battery' },
+        { name: 'Inverter Monitoring', icon: 'fa-bolt' },
+        { name: 'Charger Monitoring', icon: 'fa-plug-circle-bolt' },
+        { name: 'Vehicle Sessions', icon: 'fa-car' },
+        { name: 'Weekly Reports', icon: 'fa-file-lines' },
+        { name: 'Owner Notifications', icon: 'fa-bell' },
+    ];
 
     return (
         <div className="app-container">
             {/* Sidebar */}
             <aside className="sidebar">
                 <div className="brand">
-                    <i className="fas fa-bolt text-accent"></i>
-                    <span className="font-bold">EV-STATION AI</span>
+                    <i className="fas fa-bolt"></i>
+                    <span>NexCharge</span>
                 </div>
                 <nav className="nav-menu">
-                    <div className="nav-item active"><i className="fas fa-th-large"></i> Dashboard</div>
-                    <div className="nav-item"><i className="fas fa-chart-line"></i> Analytics</div>
-                    <div className="nav-item"><i className="fas fa-shield-alt"></i> Health Check</div>
-                    <div className="nav-item mt-auto" onClick={handleLogout} style={{ cursor: 'pointer', color: 'var(--color-red)' }}>
-                        <i className="fas fa-sign-out-alt"></i> Logout
-                    </div>
+                    {sidebarItems.map((item) => (
+                        <div 
+                            key={item.name}
+                            className={`nav-item ${currentView === item.name ? 'active' : ''}`}
+                            onClick={() => setCurrentView(item.name)}
+                        >
+                            <i className={`fas ${item.icon}`}></i>
+                            <span>{item.name}</span>
+                        </div>
+                    ))}
                 </nav>
+                <div className="sidebar-footer">
+                    <span className="system-secured-badge">SYSTEM SECURED</span>
+                </div>
             </aside>
 
             {/* Main Content */}
             <main className="main-content">
-                <div className="op-board-container">
-                    <header className="topbar">
-                        <div className="page-title">
-                            <h1>Operational Dashboard</h1>
-                            <span className="subtitle">System Status: <span className="text-green">All Systems Nominal</span></span>
+                <header className="topbar">
+                    <div className="page-title">
+                        <h1>Operational Dashboard</h1>
+                        <span className="subtitle">System-wide real-time status</span>
+                    </div>
+                    <div className="user-profile">
+                        <div className="user-info">
+                            <span className="name">Admin</span>
+                            <span className="email">admin@nexcharge.ai</span>
                         </div>
-                        <div className="flex-row gap-4" style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
-                            <span className="font-mono text-lg">{time}</span>
-                            <button className="theme-toggle"><i className="fas fa-sun"></i></button>
-                        </div>
-                    </header>
+                        <button className="theme-toggle" style={{width: '32px', height: '32px', borderRadius: '50%', background: '#e0f2fe', border: 'none', color: '#0ea5e9'}}>
+                            <i className="fas fa-moon"></i>
+                        </button>
+                        <button onClick={handleLogout} style={{width: '32px', height: '32px', borderRadius: '8px', background: '#fee2e2', border: 'none', color: '#ef4444'}}>
+                            <i className="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </header>
 
-                    {/* Dashboard Grid */}
-                    <div className="grid-2col" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px'}}>
-                        <div className="card">
-                            <div className="card-header"><h3><i className="fas fa-temperature-high"></i> Predictive Temperature</h3></div>
-                            <div className="p-6" style={{ height: '250px' }}>
-                                <canvas ref={predTempChartRef}></canvas>
+                <div className="grid-3col" style={{display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '24px', marginBottom: '24px'}}>
+                    {/* Immediate Action Panel */}
+                    <div className="card">
+                        <div className="card-header">
+                            <i className="fas fa-exclamation-triangle" style={{color: '#f59e0b'}}></i>
+                            <h3>Immediate Action Panel</h3>
+                        </div>
+                        <div className="alert-card">
+                            <i className="fas fa-broom"></i>
+                            <span>Solar panels require cleaning (Dust &gt; 40%).</span>
+                        </div>
+                        <div className="alert-card">
+                            <i className="fas fa-battery-empty"></i>
+                            <span>Critical: Battery electrolyte level low detected.</span>
+                        </div>
+                    </div>
+
+                    {/* Session Summary */}
+                    <div className="card">
+                        <div className="card-header">
+                            <i className="fas fa-car" style={{color: '#0ea5e9'}}></i>
+                            <h3>Session Summary</h3>
+                        </div>
+                        <div style={{marginTop: '20px'}}>
+                            <div className="flex-between" style={{padding: '12px 0', borderBottom: '1px solid #f1f5f9'}}>
+                                <span className="text-secondary">Active Sessions</span>
+                                <span className="font-bold text-lg">3</span>
                             </div>
-                        </div>
-
-                        <div className="card">
-                            <div className="card-header"><h3><i className="fas fa-wave-square"></i> Acoustic Analysis</h3></div>
-                            <div className="p-6" style={{ height: '250px' }}>
-                                <canvas ref={acousticChartRef}></canvas>
+                            <div className="flex-between" style={{padding: '12px 0', borderBottom: '1px solid #f1f5f9'}}>
+                                <span className="text-secondary">Completed Today</span>
+                                <span className="font-bold text-lg">18</span>
+                            </div>
+                            <div className="flex-between" style={{padding: '12px 0'}}>
+                                <span className="text-secondary">Waiting Vehicles</span>
+                                <span className="font-bold text-lg">5</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid-4col" style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '24px'}}>
-                         <div className="panel-sensor-card">
-                            <div className="text-muted text-xs">SOLAR GENERATION</div>
-                            <div className="temp-val text-accent">{solarP} kW</div>
-                         </div>
-                         <div className="panel-sensor-card">
-                            <div className="text-muted text-xs">CHARGER LOAD</div>
-                            <div className="temp-val text-green">{chgP} kW</div>
-                         </div>
-                         <div className="panel-sensor-card">
-                            <div className="text-muted text-xs">BATTERY LEVEL</div>
-                            <div className="temp-val text-yellow">85%</div>
-                            <div className="soc-bar-container"><div className="soc-bar-fill status-yellow-bg" style={{width: '85%'}}></div></div>
-                         </div>
-                         <div className="panel-sensor-card">
-                            <div className="text-muted text-xs">SYSTEM HEALTH</div>
-                            <div className="temp-val text-green">Optimal</div>
-                         </div>
+                    {/* Charging Distribution Chart */}
+                    <div className="card">
+                        <div className="card-header">
+                            <h3 style={{margin: 0}}>CHARGING DISTRIBUTION</h3>
+                        </div>
+                        <div style={{height: '180px', position: 'relative'}}>
+                            <canvas ref={chargingChartRef}></canvas>
+                            <div className="chart-legend" style={{display: 'flex', gap: '10px', fontSize: '0.7rem', justifyContent: 'center', marginTop: '10px'}}>
+                                <span><i className="fas fa-square" style={{color: '#0ea5e9'}}></i> Active</span>
+                                <span><i className="fas fa-square" style={{color: '#10b981'}}></i> Completed</span>
+                                <span><i className="fas fa-square" style={{color: '#f59e0b'}}></i> Waiting</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid-2col" style={{display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '24px', marginBottom: '24px'}}>
+                    {/* Thermal Risk Health */}
+                    <div className="card">
+                        <div className="card-header">
+                            <i className="fas fa-globe" style={{color: '#0ea5e9'}}></i>
+                            <h3>Thermal Risk Health</h3>
+                        </div>
+                        <div style={{display: 'flex', alignItems: 'center', height: '220px'}}>
+                            <div style={{width: '60%', height: '100%'}}>
+                                <canvas ref={thermalChartRef}></canvas>
+                            </div>
+                            <div style={{width: '40%', paddingLeft: '20px', fontSize: '0.85rem'}}>
+                                <div style={{marginBottom: '8px'}}><i className="fas fa-square mr-2" style={{color: '#10b981'}}></i> Normal: 14</div>
+                                <div style={{marginBottom: '8px'}}><i className="fas fa-square mr-2" style={{color: '#f59e0b'}}></i> Warning: 5</div>
+                                <div style={{marginBottom: '8px'}}><i className="fas fa-square mr-2" style={{color: '#ef4444'}}></i> Critical: 3</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Power Flow Analysis */}
+                    <div className="card">
+                        <div className="card-header">
+                            <i className="fas fa-chart-line" style={{color: '#0ea5e9'}}></i>
+                            <h3>Power Flow Analysis</h3>
+                        </div>
+                        <div className="power-flow-container" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 0'}}>
+                            <div className="flow-node">
+                                <i className="fas fa-solar-panel"></i>
+                                <span className="flow-label">SOLAR GENERATION</span>
+                                <span className="flow-value">44.31 kW</span>
+                            </div>
+                            <div style={{flex: 1, borderTop: '2px dashed #cbd5e1', margin: '0 10px', position: 'relative'}}>
+                                <i className="fas fa-chevron-right" style={{position: 'absolute', right: '-8px', top: '-7px', color: '#94a3b8', fontSize: '10px'}}></i>
+                            </div>
+                            <div className="flow-node">
+                                <i className="fas fa-bolt"></i>
+                                <span className="flow-label">SYSTEM LOSS</span>
+                                <span className="flow-value">40.52 kW</span>
+                                <span style={{fontSize: '0.65rem', color: '#10b981', fontWeight: 800}}>8.5% Eff</span>
+                            </div>
+                            <div style={{flex: 1, borderTop: '2px dashed #cbd5e1', margin: '0 10px', position: 'relative'}}>
+                                <i className="fas fa-chevron-right" style={{position: 'absolute', right: '-8px', top: '-7px', color: '#94a3b8', fontSize: '10px'}}></i>
+                            </div>
+                             <div className="flow-node">
+                                <i className="fas fa-microchip"></i>
+                                <span className="flow-label">INVERTER INPUT</span>
+                                <span className="flow-value">3.79 kW</span>
+                            </div>
+                            <div style={{flex: 1, borderTop: '2px dashed #cbd5e1', margin: '0 10px', position: 'relative'}}>
+                                <i className="fas fa-chevron-right" style={{position: 'absolute', right: '-8px', top: '-7px', color: '#94a3b8', fontSize: '10px'}}></i>
+                            </div>
+                            <div className="flow-node">
+                                <i className="fas fa-charging-station"></i>
+                                <span className="flow-label">EV CHARGER</span>
+                                <span className="flow-value">3.60 kW</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Solar Array Monitoring */}
+                <div className="card">
+                    <div className="card-header">
+                        <i className="fas fa-solar-panel" style={{color: '#0ea5e9'}}></i>
+                        <h3>Solar Array Monitoring (12 Panels)</h3>
+                    </div>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px'}}>
+                        {[
+                            { id: 'SP1', val: '37.5°', status: 'green' },
+                            { id: 'SP2', val: '43.7°', status: 'orange' },
+                            { id: 'SP3', val: '41.5°', status: 'red' },
+                            { id: 'SP4', val: '41.9°', status: 'orange' },
+                            { id: 'SP5', val: '47.4°', status: 'green' },
+                            { id: 'SP6', val: '31.0°', status: 'orange' },
+                            { id: 'SP7', val: '40.2°', status: 'red' },
+                            { id: 'SP8', val: '38.5°', status: 'green' },
+                            { id: 'SP9', val: '42.1°', status: 'orange' },
+                            { id: 'SP10', val: '44.5°', status: 'green' },
+                            { id: 'SP11', val: '39.8°', status: 'red' },
+                            { id: 'SP12', val: '36.5°', status: 'green' },
+                        ].map(panel => (
+                            <div key={panel.id} className="panel-sensor-card" style={{textAlign: 'center'}}>
+                                <div className="flex-between" style={{marginBottom: '10px'}}>
+                                    <span style={{fontSize: '0.75rem', fontWeight: 700, color: '#64748b'}}>{panel.id}</span>
+                                    <div style={{width: '8px', height: '8px', borderRadius: '50%', background: panel.status === 'green' ? '#10b981' : panel.status === 'orange' ? '#f59e0b' : '#ef4444'}}></div>
+                                </div>
+                                <div style={{fontSize: '1.2rem', fontWeight: 800}}>{panel.val}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </main>
