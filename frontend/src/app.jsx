@@ -1,22 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom/client';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
 
 const App = () => {
-    const [time, setTime] = useState(new Date().toLocaleTimeString());
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTime(new Date().toLocaleTimeString());
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+    const [isAuthenticated, setIsAuthenticated] = useState(
+        localStorage.getItem('isAuthenticated') === 'true'
+    );
 
     return (
-        <div className="container">
-            <h1>EV Charging Monitoring - Live</h1>
-            <p>System Clock: {time}</p>
-            {/* The rest of the dashboard components will go here */}
-        </div>
+        <Router>
+            <Routes>
+                {/* Public Routes */}
+                <Route 
+                    path="/login" 
+                    element={<Login setIsAuthenticated={setIsAuthenticated} />} 
+                />
+                <Route path="/signup" element={<Signup />} />
+
+                {/* Dashboard (Protected Route) */}
+                <Route 
+                    path="/dashboard" 
+                    element={isAuthenticated ? <Dashboard setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
+                />
+
+                {/* Redirect / to dashboard if authenticated, else to login */}
+                <Route 
+                    path="/" 
+                    element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} 
+                />
+
+                {/* Catch-all for unknown routes */}
+                <Route 
+                    path="*" 
+                    element={<Navigate to="/" />} 
+                />
+            </Routes>
+        </Router>
     );
 };
 
